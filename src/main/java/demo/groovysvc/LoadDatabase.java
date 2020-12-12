@@ -1,5 +1,7 @@
 package demo.groovysvc;
 
+import java.util.Date;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
@@ -23,6 +25,8 @@ public class LoadDatabase {
 		  task1.setId(2L);
 		  task2.setLang("lang2");
 		  task2.setCode("code2");
+		  task2.setState(TaskState.RUNNING);
+		  task2.setCreatedDate(new Date());
 
 		  return args -> {
 			  log.info("Preloading " + repository.save(task1));

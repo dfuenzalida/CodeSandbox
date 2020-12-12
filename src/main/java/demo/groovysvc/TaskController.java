@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 public class TaskController {
 
 	private final TaskRepository repository;
+	private final TaskRunner runner;
 
 	@GetMapping("/api/tasks")
 	List<Task> all() {
@@ -22,8 +23,10 @@ public class TaskController {
 	}
 
 	@PostMapping("/api/tasks")
-	Task createTask(@RequestBody Task task) {
-		return repository.save(task);
+	Task createTask(@RequestBody Task task) throws Exception {
+		repository.save(task);
+		Thread.sleep(5000L); // wait 5 seconds
+		return runner.runTask(task.getId());
 	}
 
 	@GetMapping("/api/tasks/{id}")
