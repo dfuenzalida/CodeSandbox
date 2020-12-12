@@ -1,5 +1,6 @@
 package demo.groovysvc;
 
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.web.bind.annotation.GetMapping;
@@ -24,8 +25,8 @@ public class TaskController {
 
 	@PostMapping("/api/tasks")
 	Task createTask(@RequestBody Task task) throws Exception {
+		task.setCreatedDate(new Date());
 		repository.save(task);
-		Thread.sleep(5000L); // wait 5 seconds
 		return runner.runTask(task.getId());
 	}
 

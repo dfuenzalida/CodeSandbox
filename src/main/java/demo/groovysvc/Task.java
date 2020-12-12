@@ -5,6 +5,7 @@ import java.util.Date;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
+import javax.persistence.Lob;
 
 import lombok.Data;
 
@@ -18,9 +19,9 @@ public class Task {
 	private String lang;
 
 	// Command execution
-	private String code;
-	private String stdout;
-	private String stderr;
+	private @Lob String code;
+	private @Lob String stdout;
+	private @Lob String stderr;
 	private Integer exitCode;
 
 	// Timestamps
