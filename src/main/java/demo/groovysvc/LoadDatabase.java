@@ -19,7 +19,7 @@ public class LoadDatabase {
 		  task1.setCode("code1");
 
 		  return args -> {
-			  log.info("Preloading " + repository.save(task1));
+			  // log.info("Preloading " + repository.save(task1));
 		  };
 	  }
 }
