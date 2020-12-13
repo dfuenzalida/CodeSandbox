@@ -25,7 +25,9 @@ public class TaskController {
 
 	@PostMapping("/api/tasks")
 	Task createTask(@RequestBody Task task) throws Exception {
+		// TODO validate request and InvalidTaskRequestException for a 401 or similar
 		task.setCreatedDate(new Date());
+		task.setState(TaskState.CREATED);
 		repository.save(task);
 		return runner.runTask(task.getId());
 	}
