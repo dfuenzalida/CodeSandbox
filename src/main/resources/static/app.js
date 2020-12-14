@@ -31,10 +31,8 @@ function getTasks() {
   .then(response => response.json())
   .then(data => {
     tasks = data;
-    var html = '';
-    data.map(task => html += renderTask(task));
+    var html = data.map(task => renderTask(task)).join("");
     updateById('taskListContainer', html);
-    // console.log(JSON.stringify(data));
   });
 }
 
@@ -74,14 +72,18 @@ async function postData(url = '', data = {}) {
   return response.json();
 }
 
+function formAlert(text) {
+    updateById('alert', text);
+    show('alert');
+    setTimeout(() => hide('alert'), 2000);
+}
+
 function submitForm() {
     var taskData = {lang: 'groovy'};
     taskData['name'] = valueOf('scriptName');
     taskData['code'] = valueOf('scriptCode');
     postData('/api/tasks', taskData).then( response => {
-        updateById('alert', 'Task #' + response.id + ' created');
-        show('alert');
-        setTimeout(() => hide('alert'), 2000);
+        formAlert('Task #' + response.id + ' created');
 	    console.log(JSON.stringify(response));
 	    document.getElementsByTagName('form')[0].reset();
     });
