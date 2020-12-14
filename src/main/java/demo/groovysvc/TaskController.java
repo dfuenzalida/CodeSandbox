@@ -25,7 +25,10 @@ public class TaskController {
 
 	@PostMapping("/api/tasks")
 	Task createTask(@RequestBody Task task) throws Exception {
-		// TODO validate request and InvalidTaskRequestException for a 401 or similar
+		if (!TaskRunner.validLangs.contains(task.getLang())) {
+			throw new InvalidTaskRequestException(task.getLang());
+		}
+
 		task.setCreatedDate(new Date());
 		task.setState(TaskState.CREATED);
 		repository.save(task);
