@@ -8,32 +8,40 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
 public class TaskRunner {
 
+	@Value("${groovyService.timeoutSecs}")
+	private String timeoutSecs;
+
 	private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
 	private ExecutorService executorService;
+
+	public static List<String> validLangs;
 
 	@Autowired
 	private TaskRepository repository;
 
-	public TaskRunner() {
-		executorService = Executors.newFixedThreadPool(10);
-		try {
-			Path tempFolder = Paths.get("/tmp/groovyService/");
-			Files.createDirectories(tempFolder);
-		} catch (IOException ex) {
-			log.error(ex.getMessage());
-		}
+	public TaskRunner(
+			@Value("${groovyService.threadPoolSize}") Integer threadPoolSize,
+			@Value("${groovyService.validLangs}") String validLangsProp) {
+		executorService = Executors.newFixedThreadPool(threadPoolSize);
+		log.info(String.format("Created fixed pool of %s executors for tasks", threadPoolSize));
+		validLangs = Arrays.asList(validLangsProp.split(","));
+		log.info(String.format("List of valid languages for tasks: %s", validLangs));
 	}
 
 	public Task runTask(Long taskId) {
@@ -48,17 +56,10 @@ public class TaskRunner {
 		return task;
 	}
 
-	String readToString(InputStream is) throws IOException {
+	String readAsString(InputStream is) throws IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-		StringBuilder builder = new StringBuilder();
-		String eol = "";
-		String line;
-		while ((line = reader.readLine()) != null) {
-			builder.append(eol);
-			builder.append(line);
-			eol = "\n";
-		}
-		return builder.toString();
+		List<String> lines = reader.lines().collect(Collectors.toList());
+		return String.join("\n", lines);
 	}
 
 	Runnable createRunnableTask(Task task) {
@@ -67,54 +68,95 @@ public class TaskRunner {
 			@Override
 			public void run() {
 				try {
-					// TODO add logging
-					Path tempFile = Paths.get(String.format("/tmp/groovyService/%s.tmp", task.getId()));
-					Files.write(tempFile, task.getCode().getBytes(StandardCharsets.UTF_8));
+					// Save the code in disk for the container to use
+					writeScriptForTask(task);
 
 					task.setStartedDate(new Date());
 					task.setState(TaskState.RUNNING);
 					repository.save(task);
 
-					// View of the script in the container volume
-					String script = String.format("/groovyScripts/%s.tmp", task.getId());
-
-					// TODO Create one directory per task and mount /tmp/groovyService/<taskId> as /groovyService
+					// Create one directory per task and mount /tmp/groovyService/<taskId> as /groovyService
 					// so that one script can't read other script files by opening ("../something/1234.tmp")
+					String volume = String.format("%s:/groovyScripts:ro", directoryForTask(task));
+
+					// View of the script in the container volume
+					String script = "/groovyScripts/script.groovy";
 
 					// Run the script in the container
 					ProcessBuilder processBuilder = new ProcessBuilder();
 
-					// TODO add parameters to set execution limits on the container: memory/disk/cpu/time
 					// Using docker volumes and workdir to run a script in the same disk as the host
 					processBuilder.command(
 							"docker", "run",
 							"--rm",
 							"--network", "host",
 							// "-m", "256M",  // 256 MB memory limit
-							"-v", "/tmp/groovyService:/groovyScripts:ro", // read-only mount tmp folder as /home/groovy/scripts,
+							"-v", volume,
 							"-w", "/groovyScripts",
 							"groovy", // container name
-							"timeout", "10", // call `/usr/bin/timeout` with a 10 second timeout
+							"timeout", timeoutSecs, // call `/usr/bin/timeout` with a timeout
 							task.getLang(), // executable name
 							script);
 
+					log.info(String.format("Starting process for task #%s with timeout of %s seconds", task.getId(), timeoutSecs));
 					Process process = processBuilder.start();
 					int exitCode = process.waitFor();
 
+					log.info(String.format("Process for task #%s finished", task.getId()));
 					task.setExitCode(exitCode);
-					task.setStderr(readToString(process.getErrorStream()));
-					task.setStdout(readToString(process.getInputStream()));
+					task.setStderr(readAsString(process.getErrorStream()));
+					task.setStdout(readAsString(process.getInputStream()));
 
 				} catch (IOException | InterruptedException e) {
-					log.error(e.getMessage());
+					log.error(String.format("Exception when running task #%s:", e.getMessage()));
 				}
 
-				// TODO remove temporary files and folders
+				// Cleanup
+				deleteScriptForTask(task);
 
+				// update the task status
 				task.setState(TaskState.COMPLETE);
 				task.setEndDate(new Date());
 				repository.save(task);
 			}
 		};
+	}
+
+	String directoryForTask(Task task) {
+		return String.format("/tmp/groovyService/%s", task.getId());
+	}
+
+	void writeScriptForTask(Task task) {
+		try {
+			// Create directory
+			String directory = directoryForTask(task);
+			log.info(String.format("Creating directory for task #%s on %s", task.getId(), directory));
+			Path tempFolder = Paths.get(directory);
+			Files.createDirectories(tempFolder);
+
+			// Write script
+			log.info(String.format("Writing script for task #%s", task.getId(), directory));
+			Path tempFile = Paths.get(String.format("%s/script.groovy", directory));
+			Files.write(tempFile, task.getCode().getBytes(StandardCharsets.UTF_8));
+		} catch (IOException ex) {
+			log.error(ex.getMessage());
+		}
+	}
+
+	void deleteScriptForTask(Task task) {
+		try {
+			// Delete file and directory
+			String directory = directoryForTask(task);
+			Path directoryPath = Paths.get(directory);
+			Path tempFile = Paths.get(String.format("%s/script.groovy", directory));
+
+			log.info(String.format("Deleting script for task #%s", task.getId(), directory));
+			Files.delete(tempFile);
+
+			log.info(String.format("Deleting directory for task #%s", task.getId(), directory));
+			Files.delete(directoryPath);
+		} catch (IOException ex) {
+			log.error(ex.getMessage());
+		}
 	}
 }
