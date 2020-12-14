@@ -88,10 +88,13 @@ public class TaskRunner {
 					// Using docker volumes and workdir to run a script in the same disk as the host
 					processBuilder.command(
 							"docker", "run",
+							"--rm",
 							"--network", "host",
-							"-v", "/tmp/groovyService:/groovyScripts", // mount tmp folder as /home/groovy/scripts
+							// "-m", "256M",  // 256 MB memory limit
+							"-v", "/tmp/groovyService:/groovyScripts:ro", // read-only mount tmp folder as /home/groovy/scripts,
 							"-w", "/groovyScripts",
-							task.getLang(), // container name
+							"groovy", // container name
+							"timeout", "10", // call `/usr/bin/timeout` with a 10 second timeout
 							task.getLang(), // executable name
 							script);
 
