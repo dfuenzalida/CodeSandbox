@@ -17,6 +17,7 @@ Running the code in a container allows simpler management of system resources an
 
 ## Development
 
+* In Linux, the user account that will be running the service needs to belong to the `docker` group. You can run `adduser <username> docker` and log out and log back in.
 * Run `GroovysvcApplication` from your IDE or run `./mvnw spring-boot:run`
 
 ### Packaging
