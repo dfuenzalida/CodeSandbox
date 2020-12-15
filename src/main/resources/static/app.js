@@ -92,7 +92,7 @@ function formAlert(text) {
 // Submit handler for the task creation form
 function submitForm() {
   const taskData = {
-    lang: 'groovy',
+    lang: valueOf('scriptLang'),
     name: valueOf('scriptName'),
     code: valueOf('scriptCode')
   };
