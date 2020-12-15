@@ -55,6 +55,19 @@ function renderTask(task) {
     '</div><p class="mb-1">' + task.id + '</p></a>';
 }
 
+// Escape a single character into its HTML entity, if any of '&', '<', '>'
+function escapeChar(c) {
+  if (c === "&") return "&amp;";
+  if (c === "<") return "&lt;";
+  if (c === ">") return "&gt;";
+  else return c;
+}
+
+// Escape all entities in a given string
+function escapeString(s) {
+  return s.toString().split("").map(escapeChar).join("");
+}
+
 // show a table with the properties of a task found by its ID
 function taskDetail(taskId) {
   showTaskDetail();
@@ -62,7 +75,7 @@ function taskDetail(taskId) {
   var html = '<table class="table table-bordered table-striped table-condensed table-hover"><tbody>';
 
   Object.keys(task).map(k => {
-    var v = task[k];
+    var v = escapeString( task[k] );
     html += '<tr><th scope="row">' + k + '</th><td>';
     html += (k === "code" || k === "stdout" || k === "stderr") ? ('<pre>' + v + '</pre>') : v;
     html += '</td></tr>';
