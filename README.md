@@ -112,13 +112,13 @@ The following parameters in the `application.properties` file can be used to cha
 * `groovyService.threadPoolSize` - defines the size of the thread pool that can work on tasks (eg. how many containers can run simultaneously). By default it's set to `3`.
 * `groovyService.timeoutSecs` - the maximum time (in seconds) that a task can be running before being killed. By default it's set to `10` seconds. Internally it uses the `timeout` command from GNU coreutils, so it also accepts one of the following suffixes: 's' for seconds (the default), 'm' for minutes, 'h' for hours or 'd' for days. NOTE: A duration of `0` disables the timeout.
 
-### Limitations
+### Limitations, possible enhancements
 
-* The service does not implement any mechanism of **authentication and authorization** - if a request meets the bare minimum validation is queued and (eventually) executed. It is trivial an unlimited amount of "slow" tasks and prevent other users to submit tasks. An enhancement would be to include:
+* **Security**: The service does not implement any mechanism of **authentication and authorization** - if a request meets the bare minimum validation is queued and (eventually) executed. It is trivial an unlimited amount of "slow" tasks and prevent other users to submit tasks. An enhancement would be to include:
   * Authentication and authorization - only valid users of an organization should be allowed to see *their own* tasks and submit tasks
   * A rate/quota system (complex): for a given principal or account there should be a limit on the number of tasks they can submit per unit of time (eg. "5 tasks per minute") and/or runtime (eg. "100 seconds of runtime per minute, per client")
 
-* **Breaking out the container**: containers are generally safe but it could be possible to [run scripts that run shell commands](https://stackoverflow.com/a/159270/483566) and extract precise version information of the environment and then attempt to recreate [known exploits for Docker](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=docker), like the following:
+* **Breaking out the container**: GroovyService was written with the assumption that containers are generally safe but it could be possible to [run scripts that run shell commands](https://stackoverflow.com/a/159270/483566) and extract precise version information of the environment and then attempt to recreate [known exploits for Docker](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=docker), like the following:
 
 ```
 def sout = new StringBuilder(), serr = new StringBuilder()
@@ -128,9 +128,16 @@ proc.waitForOrKill(1000)
 println "OUT:$sout\n\nERR:$err"
 ```
 
-* Running the latest version of the container and using current, patched version of the JDK and Docker helps to prevent this scenario
+... running the latest version of the container and using current, patched version of the JDK and Docker helps to prevent this scenario
 
-### Example tasks
+* **Scaling the service**:
+
+  * Running multiple instances of the service would require some changes: each instance would have to share some shared storage for the task information. An option could be to change the storage to another database supported by JPA (eg. Postgres) and configure the JDBC properties in the `application.properties` file. Using other persistance options such as Redis are possible but would require more changes.
+
+  * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize GroovyService and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
+
+
+## Example tasks
 
 The following programs can be used to test the service:
 
@@ -214,7 +221,19 @@ curl -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -d '{"n
 ```
 ---
 
+Perl example
 
+A curious thing about the `groovy` container is that it also has Perl installed. By default, the `perl` interpreter is also whitelisted in `application.properties` so you can submit a Perl program too.
+
+In order to submit Perl code from the Web UI, you'll need to update the value of a hidden parameter in the form. From the Web UI, click on the Create Task button to show the task creation form.
+
+Open the developer tools in your browser (eg. press `F12`) and enter the following in the console:
+
+```
+document.forms[0].scriptLang.value="perl"
+```
+
+Now, you can add Perl code in the text area, you can use this esoteric program to test: https://gist.github.com/dfuenzalida/4cf84e83e5db002199c24dcdda121904
 
 
 ## Useful link references
