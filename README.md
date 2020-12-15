@@ -131,9 +131,7 @@ println "OUT:$sout\n\nERR:$err"
 ... running the latest version of the container and using current, patched version of the JDK and Docker helps to prevent this scenario
 
 * **Scaling the service**:
-
   * Running multiple instances of the service would require some changes: each instance would have to share some shared storage for the task information. An option could be to change the storage to another database supported by JPA (eg. Postgres) and configure the JDBC properties in the `application.properties` file. Using other persistance options such as Redis are possible but would require more changes.
-
   * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize GroovyService and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
 
 
