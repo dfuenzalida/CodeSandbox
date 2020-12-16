@@ -26,7 +26,9 @@ public class TaskController {
 	@PostMapping("/api/tasks")
 	Task createTask(@RequestBody Task task) throws Exception {
 		if (!TaskRunner.validLangs.contains(task.getLang())) {
-			throw new InvalidTaskRequestException(task.getLang());
+			throw new InvalidTaskCreationRequestException(String.format("Invalid lang: %s", task.getLang()));
+		} else if (task.getCode() == null || task.getCode().isEmpty() || task.getCode().isBlank()) {
+			throw new InvalidTaskCreationRequestException("No code entered for this task request");
 		}
 
 		task.setCreatedDate(new Date());
