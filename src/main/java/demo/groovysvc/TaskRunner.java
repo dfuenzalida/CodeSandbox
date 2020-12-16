@@ -24,11 +24,9 @@ import org.springframework.stereotype.Component;
 @Component
 public class TaskRunner {
 
-	@Value("${groovyService.timeoutSecs}")
-	private String timeoutSecs;
-
 	private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
 	private ExecutorService executorService;
+	private String timeoutSecs;
 
 	public static List<String> validLangs;
 
@@ -36,12 +34,18 @@ public class TaskRunner {
 	private TaskRepository repository;
 
 	public TaskRunner(
-			@Value("${groovyService.threadPoolSize}") Integer threadPoolSize,
-			@Value("${groovyService.validLangs}") String validLangsProp) {
-		executorService = Executors.newFixedThreadPool(threadPoolSize);
-		log.info(String.format("Created fixed pool of %s executors for tasks", threadPoolSize));
-		validLangs = Arrays.asList(validLangsProp.split(","));
+			@Value("${groovyService.threadPoolSize}") Integer threadPoolSizeProp,
+			@Value("${groovyService.validLangs}") String validLangsProp,
+			@Value("${groovyService.timeoutSecs}") String timeoutSecsProp) {
+
+		log.info(String.format("Created fixed pool of %s executors for tasks", threadPoolSizeProp));
+		executorService = Executors.newFixedThreadPool(threadPoolSizeProp);
+
 		log.info(String.format("List of valid languages for tasks: %s", validLangs));
+		validLangs = Arrays.asList(validLangsProp.split(","));
+
+		log.info(String.format("Setting timeout for tasks to: %s", validLangs));
+		timeoutSecs = timeoutSecsProp;
 	}
 
 	public Task runTask(Long taskId) {
