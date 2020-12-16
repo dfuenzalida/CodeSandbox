@@ -120,7 +120,7 @@ The following parameters in the `application.properties` file can be used to cha
 
 * **Breaking out the container**: GroovyService was written with the assumption that containers are generally safe but it could be possible to [run scripts that run shell commands](https://stackoverflow.com/a/159270/483566) and extract precise version information of the environment and then attempt to recreate [known exploits for Docker](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=docker), like the following:
 
-```
+```groovy
 def sout = new StringBuilder(), serr = new StringBuilder()
 def proc = 'uname -r -v'.execute() // prints the Kernel version
 proc.consumeProcessOutput(sout, serr)
@@ -145,7 +145,11 @@ A Groovy program that prints the result of `(2*3*4)`:
 
 ```
 $ curl --no-progress-meter -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -d '{"name": "example", "lang": "groovy", "code": "println(2*3*4)"}' | json_pp
+```
 
+returns
+
+```javascript
 {
    "code" : "println(2*3*4)",
    "createdDate" : "2020-12-12T08:34:09.160+00:00",
@@ -231,11 +235,12 @@ Open the developer tools in your browser (eg. press `F12`) and enter the followi
 document.forms[0].scriptLang.value="perl"
 ```
 
-Now, you can add Perl code in the text area, you can use this esoteric program to test: https://gist.github.com/dfuenzalida/4cf84e83e5db002199c24dcdda121904
+Now, you can add Perl code in the text area, use this esoteric program to test: https://gist.github.com/dfuenzalida/4cf84e83e5db002199c24dcdda121904
 
 
 ## Useful link references
 
+* https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
 * https://stackoverflow.com/questions/48299352/how-to-limit-docker-run-execution-time
-
 * https://stackoverflow.com/a/48299490/483566
+* https://www.gnu.org/software/coreutils/manual/html_node/timeout-invocation.html
