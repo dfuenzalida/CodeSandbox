@@ -21,12 +21,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import lombok.Getter;
+import lombok.Setter;
+
 @Component
 public class TaskRunner {
 
 	private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
 	private ExecutorService executorService;
 	private String timeoutSecs;
+
+	@Getter @Setter
+	private boolean killSwitch = false;
 
 	public static List<String> validLangs;
 
@@ -72,6 +78,9 @@ public class TaskRunner {
 			@Override
 			public void run() {
 				try {
+					// kill switch
+					if (killSwitch) return;
+
 					// Save the code in disk for the container to use
 					writeScriptForTask(task);
 
