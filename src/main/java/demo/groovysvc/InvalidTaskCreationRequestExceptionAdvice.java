@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
-public class InvalidTaskRequestExceptionAdvice {
+public class InvalidTaskCreationRequestExceptionAdvice {
 
 	@ResponseBody
-	@ExceptionHandler(InvalidTaskRequestException.class)
+	@ExceptionHandler(InvalidTaskCreationRequestException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	String invalidTaskRequestExceptionHandler(InvalidTaskRequestException ex) {
+	String invalidTaskRequestExceptionHandler(InvalidTaskCreationRequestException ex) {
 		return ex.getMessage();
 	}
 }
