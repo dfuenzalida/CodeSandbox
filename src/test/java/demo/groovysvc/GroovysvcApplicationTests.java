@@ -132,6 +132,24 @@ class GroovysvcApplicationTests {
 	}
 
 	@Test
+	void postingTaskWithTooMuchCodeThrows() throws Exception {
+		StringBuilder longCode = new StringBuilder();
+		while (longCode.length() < 100_000) {
+			longCode.append("println('1'); // unused payload\n");
+		}
+
+		Task task = new Task();
+		task.setName(UUID.randomUUID().toString());
+		task.setLang(TaskRunner.validLangs.get(0));
+		task.setCode(longCode.toString());
+
+		// Post and check for error
+		String result = this.restTemplate.postForObject(
+				"http://localhost:" + port + "/api/tasks", task, String.class);
+		assertThat(result.contains("Code contents are too big"));
+	}
+
+	@Test
 	void retrievingInvalidTaskIdShouldThrow() throws Exception {
 		String result = this.restTemplate.getForObject("http://localhost:" + port + "/api/tasks/-1", String.class);
 		assertThat(result.contains("Could not find task"));

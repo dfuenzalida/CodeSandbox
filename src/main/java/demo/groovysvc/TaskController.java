@@ -25,11 +25,8 @@ public class TaskController {
 
 	@PostMapping("/api/tasks")
 	Task createTask(@RequestBody Task task) throws Exception {
-		if (!TaskRunner.validLangs.contains(task.getLang())) {
-			throw new InvalidTaskCreationRequestException(String.format("Invalid lang: %s", task.getLang()));
-		} else if (task.getCode() == null || task.getCode().isEmpty() || task.getCode().isBlank()) {
-			throw new InvalidTaskCreationRequestException("No code entered for this task request");
-		}
+		// Validate the task contents before submitting
+		validateTask(task);
 
 		task.setCreatedDate(new Date());
 		task.setState(TaskState.CREATED);
@@ -40,5 +37,23 @@ public class TaskController {
 	@GetMapping("/api/tasks/{id}")
 	Task getTask(@PathVariable Long id) {
 		return repository.findById(id).orElseThrow(() -> new TaskNotFoundException(id));
+	}
+
+	private void validateTask(Task task) {
+
+		// The task needs a valid language
+		if (!TaskRunner.validLangs.contains(task.getLang())) {
+			throw new InvalidTaskCreationRequestException(String.format("Invalid lang: %s", task.getLang()));
+		}
+
+		// The task requires a non-empty, not-blank code payload
+		if (task.getCode() == null || task.getCode().isEmpty() || task.getCode().isBlank()) {
+			throw new InvalidTaskCreationRequestException("No code entered for this task request");
+		}
+
+		// The code in the task should be less than 100_000 chars long
+		if (task.getCode().length() > 100_000) {
+			throw new InvalidTaskCreationRequestException("Code contents are too big");
+		}
 	}
 }
