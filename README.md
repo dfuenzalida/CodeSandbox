@@ -8,7 +8,7 @@ Running the code in a container allows simpler management of system resources an
 
 ## Requisites
 
-* Docker
+* Docker and the `groovy` image from Docker Hub
 * Java 11 JDK 
 
 Optional
@@ -17,13 +17,13 @@ Optional
 
 ## First time setup
 
-To install the Java 11 JDK and Docker in Ubuntu 20.04, you can run the following:
+* Install the Java 11 JDK and Docker in Ubuntu 20.04, you can run the following:
 
 ```
 $ sudo apt-get install openjdk-11-jdk docker.io
 ```
 
-To add your current user to the `docker` group:
+* In order to run Docker (at least in Linux), you'll need to add your current user to the `docker` group:
 
 ```
 $ sudo adduser $USER docker
@@ -31,7 +31,7 @@ $ sudo adduser $USER docker
 
 You'll need to log out and log back in for the new group membership to be reflected.
 
-You can save some time by downloading the `groovy` container image and validating that it runs:
+* Download the `groovy` container image and validate that it runs:
 
 ```
 $ docker run -it --rm groovy groovy --version
@@ -39,31 +39,35 @@ $ docker run -it --rm groovy groovy --version
 Groovy Version: 3.0.7 JVM: 1.8.0_275 Vendor: AdoptOpenJDK OS: Linux
 ```
 
-Note that in the output above, the Java version reported is `1.8.0_275`. This is fine because it's the *Java runtime of the container*. The service (GroovyService) will run on a different JDK.
+Note that in the output above, the Java version reported is `1.8.0_275`. This is fine because it's the *Java runtime installed in the container*. The service (GroovyService) will run on a different JDK.
 
+## Running locally
 
-## Development
+* You can run the `GroovysvcApplication` class from your IDE or run from the command line with: `./mvnw spring-boot:run`
+* Once the service is up and running, it will be listening for requests on port 8080 by default. You can submit task requests using tools like Postman or cURL (see examples below), or use the browser-based UI by opening the following URL: http://localhost:8080/
 
-* In Linux, the user account that will be running the service needs to belong to the `docker` group. You can run `adduser <username> docker` and log out and log back in.
-* Run `GroovysvcApplication` from your IDE or run `./mvnw spring-boot:run`
-* Once the service is up and running, it will be available on port 8080 by default. You can submit task requests using tools like Postman or cURL, or use a browser-based UI added for convenience by opening http://localhost:8080/
+## Packaging
 
-### Packaging
+You can create the JAR file with `./mvnw clean package`, which will clean, build, run the tests and package the application as a single Java JAR file that contains everything needed to run the application (provided that you have the JDK 11 installed).
 
-You can create the JAR file with `./mvnw clean package`. This file can be run directly with `java -jar target/groovysvc-0.0.1-SNAPSHOT.jar`
+This JAR file can be run directly with `java -jar target/groovysvc-0.0.1-SNAPSHOT.jar`
 
-## Design
+## Service Design and architecture
 
 The service is intentionally simple: a RESTful wrapper around a Task Runner that receives requests containing code and passing the code to executors that will store the code in a temporary file and pass it to docker instances that will run the code.
 
+The criteria for this approach was that running arbitrary code submitted by users on a shared service is difficult to do securely, so the emphasis was on delivering a service that would allow users to submit their requests and have code running (within time limits) for a number of jobs at a time (configurable) and tackle other concerns afterwards.
+
+### Service diagram
+
 ```
-     [Web UI]
-        |
-        v
-  [REST frontend] <---> [Executor Service] <---> [Container]
-        |                     |
-        v                     |
-    [Task DB]<----------------`
+          [Web UI]
+              |
+              v
+CURL -->[REST frontend] <---> [Task Runner] <---> [Containers]
+              |                     |
+              v                     |
+          [Task DB]<----------------'
 
 ```
 
@@ -112,11 +116,11 @@ The following parameters in the `application.properties` file can be used to cha
 * `groovyService.threadPoolSize` - defines the size of the thread pool that can work on tasks (eg. how many containers can run simultaneously). By default it's set to `3`.
 * `groovyService.timeoutSecs` - the maximum time (in seconds) that a task can be running before being killed. By default it's set to `10` seconds. Internally it uses the `timeout` command from GNU coreutils, so it also accepts one of the following suffixes: 's' for seconds (the default), 'm' for minutes, 'h' for hours or 'd' for days. NOTE: A duration of `0` disables the timeout.
 
-### Limitations, possible enhancements
+### Limitations, concerns and possible enhancements
 
-* **Security**: The service does not implement any mechanism of **authentication and authorization** - if a request meets the bare minimum validation is queued and (eventually) executed. It is trivial an unlimited amount of "slow" tasks and prevent other users to submit tasks. An enhancement would be to include:
-  * Authentication and authorization - only valid users of an organization should be allowed to see *their own* tasks and submit tasks
-  * A rate/quota system (complex): for a given principal or account there should be a limit on the number of tasks they can submit per unit of time (eg. "5 tasks per minute") and/or runtime (eg. "100 seconds of runtime per minute, per client")
+* **Security**: The service does not implement any mechanism of **authentication and authorization** - if a request meets the bare minimum validation, a task is queued and (eventually) executed. It is trivial an unlimited amount of "slow" tasks that simply wait and prevent other users to submit tasks. An enhancement on this would be to include:
+  * Authentication and authorization - only valid users of an organization should be allowed to see *their own* tasks and submit tasks. For RESTful services is very common to provide an endpoint where authorized users or apps submit a POST request to create a *token* that is sent with the HTTP headers and used by the service to validate the request.
+  * An usage rate/quota system: for a given principal or account there should be a limit on the number of tasks they can submit per unit of time (eg. "5 tasks per minute") and/or runtime (eg. "100 seconds of runtime per minute, per client, across all their tasks")
 
 * **Breaking out the container**: GroovyService was written with the assumption that containers are generally safe but it could be possible to [run scripts that run shell commands](https://stackoverflow.com/a/159270/483566) and extract precise version information of the environment and then attempt to recreate [known exploits for Docker](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=docker), like the following:
 
@@ -130,8 +134,10 @@ println "OUT:$sout\n\nERR:$err"
 
 ... running the latest version of the container and using current, patched version of the JDK and Docker helps to prevent this scenario
 
+* **Changing the Database**:
+  * Running multiple instances of the service would require some changes: each instance would have to share some shared storage for the task information. An option could be to change the storage to another database supported by JPA (eg. MySQL or Postgres) and add support for it by adding the required JDBC driver in the `pom.xml` file and configuring the JDBC properties in the `application.properties` file. Using other persistance options such as Redis is also possible but would require code changes.
+
 * **Scaling the service**:
-  * Running multiple instances of the service would require some changes: each instance would have to share some shared storage for the task information. An option could be to change the storage to another database supported by JPA (eg. Postgres) and configure the JDBC properties in the `application.properties` file. Using other persistance options such as Redis are possible but would require more changes.
   * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize GroovyService and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
 
 
@@ -223,19 +229,44 @@ curl -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -d '{"n
 ```
 ---
 
+A task that submits another task by POSTing to the same service.
+
+This is interesting because in theory it opens the doors to craft a *self-replicating task*:
+
+```groovy
+baseUrl = new URL('http://localhost:8080/api/tasks')
+requestBody = '{"name":"children task","lang":"groovy","code":"println(1)"}'
+connection = baseUrl.openConnection()
+connection.setRequestProperty('Content-Type', 'application/json')
+connection.with {
+  doOutput = true
+  requestMethod = 'POST'
+  outputStream.withWriter { writer ->
+    writer << requestBody
+  }
+  println content.text.length()
+}
+```
+
+Submitting the code above will create a task, and executing the task will submit a POST request to the `/api/tasks` endpoint, creating *a new task* with the name `children task` and a small program that just prints `1`.
+
+Crafting a code payload that in turn is able to create another similar, self-replicating payload is left as an exercise to the reader.
+
+---
+
 Perl example
 
-A curious thing about the `groovy` container is that it also has Perl installed. By default, the `perl` interpreter is also whitelisted in `application.properties` so you can submit a Perl program too.
+An interesting thing about the `groovy` container is that it also has Perl installed. By default, the `perl` interpreter is also whitelisted in `application.properties` so you can submit Perl programs too.
 
-In order to submit Perl code from the Web UI, you'll need to update the value of a hidden parameter in the form. From the Web UI, click on the Create Task button to show the task creation form.
+In order to submit Perl code from the Web UI, you'll need to update the value of a hidden parameter. From the Web UI, click on the *Create Task* button to show the task creation form.
 
-Open the developer tools in your browser (eg. press `F12`) and enter the following in the console:
+Open the developer tools in your browser (eg. press `F12`) and enter the following in the JavaScript console:
 
 ```
 document.forms[0].scriptLang.value="perl"
 ```
 
-Now, you can add Perl code in the text area, use this esoteric program to test: https://gist.github.com/dfuenzalida/4cf84e83e5db002199c24dcdda121904
+Now, you can add Perl code in the text area. Use this copy of a classic, esoteric program to test it: https://gist.github.com/dfuenzalida/4cf84e83e5db002199c24dcdda121904
 
 
 ## Useful link references
@@ -244,3 +275,4 @@ Now, you can add Perl code in the text area, use this esoteric program to test: 
 * https://stackoverflow.com/questions/48299352/how-to-limit-docker-run-execution-time
 * https://stackoverflow.com/a/48299490/483566
 * https://www.gnu.org/software/coreutils/manual/html_node/timeout-invocation.html
+* https://subscription.packtpub.com/book/application_development/9781849519366/8/ch08lvl1sec89/executing-an-http-post-request
