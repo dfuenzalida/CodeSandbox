@@ -102,9 +102,9 @@ The following is the list of the APIs implemented in this version of the service
 * `GET /api/tasks` - Added mostly as a convenience for the browser-based UI, this API returns an array with all the tasks submitted to the service
 
 * `POST /api/tasks` - Submits a new task request. Expects a JSON object with the following properties:
-  * `name` - (Optional) human-readable name for this task (optional)
-  * `lang` - (Required) the programming language used to write the code of the task, by default it needs to be one of `groovy`, `echo` or `perl`.
-  * `code` - (Required) the actual code submitted for execution. Note that the task runs in an environment where no extra libraries are provided beyond the core libraries of Java, Groovy and Perl.
+    * `name` - (Optional) human-readable name for this task (optional)
+    * `lang` - (Required) the programming language used to write the code of the task, by default it needs to be one of `groovy`, `echo` or `perl`.
+    * `code` - (Required) the actual code submitted for execution. Note that the task runs in an environment where no extra libraries are provided beyond the core libraries of Java, Groovy and Perl.
   
 * `GET /api/tasks/<taskId>` - Given a valid `taskId`, returns a single JSON object with the details of the task.
 
@@ -119,8 +119,8 @@ The following parameters in the `application.properties` file can be used to cha
 ### Limitations, concerns and possible enhancements
 
 * **Security**: The service does not implement any mechanism of **authentication and authorization** - if a request meets the bare minimum validation, a task is queued and (eventually) executed. It is trivial an unlimited amount of "slow" tasks that simply wait and prevent other users to submit tasks. An enhancement on this would be to include:
-  * Authentication and authorization - only valid users of an organization should be allowed to see *their own* tasks and submit tasks. For RESTful services is very common to provide an endpoint where authorized users or apps submit a POST request to create a *token* that is sent with the HTTP headers and used by the service to validate the request.
-  * An usage rate/quota system: for a given principal or account there should be a limit on the number of tasks they can submit per unit of time (eg. "5 tasks per minute") and/or runtime (eg. "100 seconds of runtime per minute, per client, across all their tasks")
+    * Authentication and authorization - only valid users of an organization should be allowed to see *their own* tasks and submit tasks. For RESTful services is very common to provide an endpoint where authorized users or apps submit a POST request to create a *token* that is sent with the HTTP headers and used by the service to validate the request.
+    * An usage rate/quota system: for a given principal or account there should be a limit on the number of tasks they can submit per unit of time (eg. "5 tasks per minute") and/or runtime (eg. "100 seconds of runtime per minute, per client, across all their tasks")
 
 * **Breaking out the container**: GroovyService was written with the assumption that containers are generally safe but it could be possible to [run scripts that run shell commands](https://stackoverflow.com/a/159270/483566) and extract precise version information of the environment and then attempt to recreate [known exploits for Docker](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=docker), like the following:
 
@@ -135,10 +135,10 @@ println "OUT:$sout\n\nERR:$err"
 ... running the latest version of the container and using current, patched version of the JDK and Docker helps to prevent this scenario
 
 * **Changing the Database**:
-  * Running multiple instances of the service would require some changes: each instance would have to share some shared storage for the task information. An option could be to change the storage to another database supported by JPA (eg. MySQL or Postgres) and add support for it by adding the required JDBC driver in the `pom.xml` file and configuring the JDBC properties in the `application.properties` file. Using other persistance options such as Redis is also possible but would require code changes.
+    * Running multiple instances of the service would require some changes: each instance would have to share some shared storage for the task information. An option could be to change the storage to another database supported by JPA (eg. MySQL or Postgres) and add support for it by adding the required JDBC driver in the `pom.xml` file and configuring the JDBC properties in the `application.properties` file. Using other persistance options such as Redis is also possible but would require code changes.
 
 * **Scaling the service**:
-  * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize GroovyService and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
+    * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize GroovyService and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
 
 
 ## Example tasks
