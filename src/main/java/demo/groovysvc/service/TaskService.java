@@ -11,6 +11,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -22,8 +23,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import demo.groovysvc.dao.TaskRepository;
+import demo.groovysvc.dao.UserRepository;
 import demo.groovysvc.model.Task;
 import demo.groovysvc.model.TaskState;
+import demo.groovysvc.model.User;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,7 +43,10 @@ public class TaskService {
 	public static List<String> validLangs;
 
 	@Autowired
-	private TaskRepository repository;
+	private TaskRepository taskRepository;
+
+	@Autowired
+	private UserRepository userRepository;
 
 	public TaskService(
 			@Value("${groovyService.threadPoolSize}") Integer threadPoolSizeProp,
@@ -57,8 +63,20 @@ public class TaskService {
 		timeoutSecs = timeoutSecsProp;
 	}
 
-	public Task runTask(Long taskId) {
-		Task task = repository.findById(taskId).orElseThrow();
+	public Task createAndRunTask(User user, Task task) {
+		task.setCreatedDate(new Date());
+		task.setState(TaskState.CREATED);
+		taskRepository.save(task);
+
+		Set<Task> userTasks = user.getTasks();
+		userTasks.add(task);
+		userRepository.save(user);
+
+		return runTask(task.getId());
+	}
+
+	private Task runTask(Long taskId) {
+		Task task = taskRepository.findById(taskId).orElseThrow();
 
 		// Create a the task as a runnable
 		Runnable runnableTask = createRunnableTask(task);
@@ -89,7 +107,7 @@ public class TaskService {
 
 					task.setStartedDate(new Date());
 					task.setState(TaskState.RUNNING);
-					repository.save(task);
+					taskRepository.save(task);
 
 					// Create one directory per task and mount /tmp/groovyService/<taskId> as /groovyService
 					// so that one script can't read other script files by opening ("../something/1234.tmp")
@@ -133,7 +151,7 @@ public class TaskService {
 				// update the task status
 				task.setState(TaskState.COMPLETE);
 				task.setEndDate(new Date());
-				repository.save(task);
+				taskRepository.save(task);
 			}
 		};
 	}

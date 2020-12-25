@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
-public class TaskNotFoundExceptionAdvice {
+public class InvalidTaskRequestExceptionAdvice {
 
 	@ResponseBody
-	@ExceptionHandler(TaskNotFoundException.class)
-	@ResponseStatus(HttpStatus.NOT_FOUND)
-	ApiRequestError taskNotFoundExceptionHandler(TaskNotFoundException ex) {
-		return new ApiRequestError("Task not found", ex.getMessage());
+	@ExceptionHandler(InvalidTaskRequestException.class)
+	@ResponseStatus(HttpStatus.BAD_REQUEST)
+	ApiRequestError invalidTaskRequestExceptionHandler(InvalidTaskRequestException ex) {
+		return new ApiRequestError("Bad request", ex.getMessage());
 	}
 }

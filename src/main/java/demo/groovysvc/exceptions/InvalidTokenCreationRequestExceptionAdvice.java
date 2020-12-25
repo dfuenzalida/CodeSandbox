@@ -7,12 +7,12 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 @ControllerAdvice
-public class InvalidTaskCreationRequestExceptionAdvice {
+public class InvalidTokenCreationRequestExceptionAdvice {
 
 	@ResponseBody
-	@ExceptionHandler(InvalidTaskCreationRequestException.class)
+	@ExceptionHandler(InvalidTokenCreationRequestException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)
-	String invalidTaskRequestExceptionHandler(InvalidTaskCreationRequestException ex) {
-		return ex.getMessage();
+	ApiRequestError invalidTokenRequestExceptionHandler(InvalidTokenCreationRequestException ex) {
+		return new ApiRequestError("Invalid token creation request", ex.getMessage());
 	}
 }
