@@ -140,6 +140,17 @@ println "OUT:$sout\n\nERR:$err"
 * **Scaling the service**:
     * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize GroovyService and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
 
+## Example usage
+
+```
+export APITOKEN=`curl --no-progress-meter -X POST http://localhost:8080/api/tokens -H "Content-type: application/json" -d '{"username":"denis", "password":"SECRET!"}' | awk -F'"' '{ print $4 }'`
+
+echo $APITOKEN
+
+curl --no-progress-meter -X POST http://localhost:8080/api/tasks -H "Content-type: application/json" -H "Authorization: Bearer $APITOKEN" -d '{"name":"token task", "lang":"groovy", "code":"println(1)"}' | json_pp
+
+curl --no-progress-meter http://localhost:8080/api/tasks -H "Content-type: application/json" -H "Authorization: Bearer $APITOKEN" | json_pp
+```
 
 ## Example tasks
 
