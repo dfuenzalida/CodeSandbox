@@ -1,4 +1,4 @@
-package demo.groovysvc;
+package demo.groovysvc.controllers;
 
 import java.util.Date;
 import java.util.List;
@@ -9,6 +9,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import demo.groovysvc.dao.TaskRepository;
+import demo.groovysvc.exceptions.InvalidTaskCreationRequestException;
+import demo.groovysvc.exceptions.TaskNotFoundException;
+import demo.groovysvc.model.Task;
+import demo.groovysvc.model.TaskState;
+import demo.groovysvc.service.TaskService;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -16,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class TaskController {
 
 	private final TaskRepository repository;
-	private final TaskRunner runner;
+	private final TaskService runner;
 
 	@GetMapping("/api/tasks")
 	List<Task> all() {
@@ -42,7 +48,7 @@ public class TaskController {
 	private void validateTask(Task task) {
 
 		// The task needs a valid language
-		if (!TaskRunner.validLangs.contains(task.getLang())) {
+		if (!TaskService.validLangs.contains(task.getLang())) {
 			throw new InvalidTaskCreationRequestException(String.format("Invalid lang: %s", task.getLang()));
 		}
 

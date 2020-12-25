@@ -1,4 +1,4 @@
-package demo.groovysvc;
+package demo.groovysvc.model;
 
 public enum TaskState {
 	CREATED,

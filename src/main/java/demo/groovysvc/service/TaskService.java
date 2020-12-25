@@ -1,4 +1,4 @@
-package demo.groovysvc;
+package demo.groovysvc.service;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -21,13 +21,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import demo.groovysvc.dao.TaskRepository;
+import demo.groovysvc.model.Task;
+import demo.groovysvc.model.TaskState;
 import lombok.Getter;
 import lombok.Setter;
 
 @Component
-public class TaskRunner {
+public class TaskService {
 
-	private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
+	private static final Logger log = LoggerFactory.getLogger(TaskService.class);
 	private ExecutorService executorService;
 	private String timeoutSecs;
 
@@ -39,7 +42,7 @@ public class TaskRunner {
 	@Autowired
 	private TaskRepository repository;
 
-	public TaskRunner(
+	public TaskService(
 			@Value("${groovyService.threadPoolSize}") Integer threadPoolSizeProp,
 			@Value("${groovyService.validLangs}") String validLangsProp,
 			@Value("${groovyService.timeoutSecs}") String timeoutSecsProp) {

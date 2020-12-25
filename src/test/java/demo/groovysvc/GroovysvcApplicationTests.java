@@ -16,6 +16,12 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 
+import demo.groovysvc.controllers.TaskController;
+import demo.groovysvc.dao.TaskRepository;
+import demo.groovysvc.model.Task;
+import demo.groovysvc.model.TaskState;
+import demo.groovysvc.service.TaskService;
+
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class GroovysvcApplicationTests {
 
@@ -23,7 +29,7 @@ class GroovysvcApplicationTests {
 	private int port;
 
 	@Autowired
-	private TaskRunner taskRunner;
+	private TaskService taskRunner;
 
 	@Autowired
 	private TaskRepository taskRepository;
@@ -84,10 +90,10 @@ class GroovysvcApplicationTests {
 
 	@Test
 	void postingAndRetrievingObjectThroughEndpoint() throws Exception {
-		Integer randomLangIndex = (int) new Random().nextFloat() * TaskRunner.validLangs.size();
+		Integer randomLangIndex = (int) new Random().nextFloat() * TaskService.validLangs.size();
 		Task task = new Task();
 		task.setName(UUID.randomUUID().toString());
-		task.setLang(TaskRunner.validLangs.get(randomLangIndex));
+		task.setLang(TaskService.validLangs.get(randomLangIndex));
 		task.setCode(UUID.randomUUID().toString());
 
 		// Post and compare
@@ -121,7 +127,7 @@ class GroovysvcApplicationTests {
 		for (String badCode: badTaskCodes) {
 			Task task = new Task();
 			task.setName(UUID.randomUUID().toString());
-			task.setLang(TaskRunner.validLangs.get(0));
+			task.setLang(TaskService.validLangs.get(0));
 			task.setCode(badCode);
 
 			// Post and compare
@@ -140,7 +146,7 @@ class GroovysvcApplicationTests {
 
 		Task task = new Task();
 		task.setName(UUID.randomUUID().toString());
-		task.setLang(TaskRunner.validLangs.get(0));
+		task.setLang(TaskService.validLangs.get(0));
 		task.setCode(longCode.toString());
 
 		// Post and check for error

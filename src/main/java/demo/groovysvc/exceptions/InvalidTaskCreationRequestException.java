@@ -1,4 +1,4 @@
-package demo.groovysvc;
+package demo.groovysvc.exceptions;
 
 public class InvalidTaskCreationRequestException extends RuntimeException {
 
