@@ -1,4 +1,4 @@
-package demo.groovysvc.model;
+package demo.groovysvc.entity;
 
 import java.util.Date;
 

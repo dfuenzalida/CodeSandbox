@@ -10,8 +10,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import demo.groovysvc.dao.UserRepository;
-import demo.groovysvc.model.User;
+import demo.groovysvc.entity.User;
+import demo.groovysvc.repository.UserRepository;
 
 @Configuration
 public class LoadDatabase {

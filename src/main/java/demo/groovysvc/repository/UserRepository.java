@@ -1,8 +1,8 @@
-package demo.groovysvc.dao;
+package demo.groovysvc.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-import demo.groovysvc.model.User;
+import demo.groovysvc.entity.User;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 

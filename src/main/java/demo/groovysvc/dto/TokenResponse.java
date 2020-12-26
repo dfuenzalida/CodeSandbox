@@ -1,4 +1,4 @@
-package demo.groovysvc.model;
+package demo.groovysvc.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

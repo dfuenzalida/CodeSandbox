@@ -17,9 +17,9 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 
 import demo.groovysvc.controllers.TaskController;
-import demo.groovysvc.dao.TaskRepository;
-import demo.groovysvc.model.Task;
-import demo.groovysvc.model.TaskState;
+import demo.groovysvc.entity.Task;
+import demo.groovysvc.entity.TaskState;
+import demo.groovysvc.repository.TaskRepository;
 import demo.groovysvc.service.TaskService;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)

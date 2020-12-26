@@ -11,10 +11,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 
+import demo.groovysvc.entity.Task;
+import demo.groovysvc.entity.User;
 import demo.groovysvc.exceptions.InvalidTaskRequestException;
 import demo.groovysvc.exceptions.TaskNotFoundException;
-import demo.groovysvc.model.Task;
-import demo.groovysvc.model.User;
 import demo.groovysvc.service.TaskService;
 import demo.groovysvc.service.TokenService;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +29,7 @@ public class TaskController {
 
 	@GetMapping("/api/tasks")
 	Collection<Task> allUserTasks(@RequestHeader("Authorization") String requestHeader) {
-		User user = tokenService.getUserByTokenOrThrow(requestHeader);
+		User user = tokenService.getUserByToken(requestHeader);
 		log.debug(String.format("All tasks for User %s", user));
 		return user.getTasks();
 	}
@@ -38,7 +38,7 @@ public class TaskController {
 	Task createTask(
 			@RequestHeader("Authorization") String requestHeader,
 			@RequestBody Task task) throws Exception {
-		User user = tokenService.getUserByTokenOrThrow(requestHeader);
+		User user = tokenService.getUserByToken(requestHeader);
 		log.debug(String.format("Validating new for User %s", user));
 
 		// Validate the task contents before submitting
@@ -50,7 +50,7 @@ public class TaskController {
 
 	@GetMapping("/api/tasks/{id}")
 	Task getTask(@RequestHeader("Authorization") String requestHeader, @PathVariable Long id) {
-		User user = tokenService.getUserByTokenOrThrow(requestHeader);
+		User user = tokenService.getUserByToken(requestHeader);
 		Task result = user.getTasks().stream()
 				.filter(task -> task.getId() == id)
 				.findFirst()

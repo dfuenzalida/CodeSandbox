@@ -22,11 +22,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import demo.groovysvc.dao.TaskRepository;
-import demo.groovysvc.dao.UserRepository;
-import demo.groovysvc.model.Task;
-import demo.groovysvc.model.TaskState;
-import demo.groovysvc.model.User;
+import demo.groovysvc.entity.Task;
+import demo.groovysvc.entity.TaskState;
+import demo.groovysvc.entity.User;
+import demo.groovysvc.repository.TaskRepository;
+import demo.groovysvc.repository.UserRepository;
 import lombok.Getter;
 import lombok.Setter;
 
