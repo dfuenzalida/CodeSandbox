@@ -5,22 +5,35 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
+import org.springframework.data.domain.Example;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 
 import demo.groovysvc.controllers.TaskController;
+import demo.groovysvc.dto.TaskRequest;
+import demo.groovysvc.dto.TaskResponse;
 import demo.groovysvc.entity.Task;
 import demo.groovysvc.entity.TaskState;
+import demo.groovysvc.entity.User;
 import demo.groovysvc.repository.TaskRepository;
+import demo.groovysvc.repository.UserRepository;
 import demo.groovysvc.service.TaskService;
+import demo.groovysvc.service.TokenService;
 
 @SpringBootTest(webEnvironment = WebEnvironment.RANDOM_PORT)
 class GroovysvcApplicationTests {
@@ -35,14 +48,25 @@ class GroovysvcApplicationTests {
 	private TaskRepository taskRepository;
 
 	@Autowired
+	private TaskService taskService;
+
+	@Autowired
+	private UserRepository userRepository;
+
+	@Autowired
 	private TestRestTemplate restTemplate;
 
 	@Autowired
 	private TaskController taskController;
 
+	@Autowired
+	private TokenService tokenService;
+
+	@Autowired
+	private ModelMapper modelMapper;
+
 	@BeforeEach
 	void beforeEach() throws Exception {
-		taskRepository.deleteAll();
 		taskRunner.setKillSwitch(true); // don't launch containers during tests
 	}
 
@@ -58,21 +82,41 @@ class GroovysvcApplicationTests {
 	}
 
 	@Test
-	void retrievingObjectThroughEndpoint() throws Exception {
+	void retrievingTaskThroughEndpoint() throws Exception {
+		User testUser = new User();
+		testUser.setUsername("testuser");
+		testUser = userRepository.findOne(Example.of(testUser)).get();
+
 		Task task = new Task();
 		task.setName(UUID.randomUUID().toString());
 		task.setLang(UUID.randomUUID().toString());
 		task.setCode(UUID.randomUUID().toString());
-		taskRepository.save(task);
+
+		Task createdTask = taskService.createAndRunTask(testUser, task);
+		TaskRequest expected = modelMapper.map(createdTask, TaskRequest.class);
 
 		// Retrieve and compare
-		Task apiTask = this.restTemplate.getForObject(
-				"http://localhost:" + port + "/api/tasks/1", Task.class);
-		assertEquals(task, apiTask);
+		String token = tokenService.createTokenForUser("testuser");
+		String authHeader = String.format("Bearer %s", token);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		headers.add("Authorization", authHeader);
+
+		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(Map.of(), headers);
+		ResponseEntity<TaskResponse> resposeTask = restTemplate.exchange(
+				"http://localhost:" + port + "/api/tasks/" + createdTask.getId(), HttpMethod.GET, entity, TaskResponse.class);
+		TaskResponse apiTask = resposeTask.getBody();
+		TaskRequest actual = modelMapper.map(apiTask, TaskRequest.class);
+		assertEquals(expected, actual);
 	}
 
 	@Test
+	@SuppressWarnings("rawtypes")
 	void retrievingAllTasksThroughEndpoint() throws Exception {
+		User exampleUser = new User();
+		exampleUser.setUsername("testuser");
+		User testUser = userRepository.findOne(Example.of(exampleUser)).get();
+
 		Integer randNumber = 10 + Math.abs(new Random().nextInt()) % 50;
 		for (int i = 0; i < randNumber; i++) {
 			Task task = new Task();
@@ -80,29 +124,48 @@ class GroovysvcApplicationTests {
 			task.setLang(UUID.randomUUID().toString());
 			task.setCode(UUID.randomUUID().toString());
 			taskRepository.saveAndFlush(task);
+			testUser.getTasks().add(task);
 		}
+		userRepository.save(testUser);
+
 		// Retrieve and compare
-		@SuppressWarnings({ "rawtypes" })
-		List tasks = this.restTemplate.getForObject(
-				"http://localhost:" + port + "/api/tasks", List.class);
+		String token = tokenService.createTokenForUser("testuser");
+		String authHeader = String.format("Bearer %s", token);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		headers.add("Authorization", authHeader);
+
+		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(Map.of(), headers);
+		ResponseEntity<List> resposeList = restTemplate.exchange(
+				"http://localhost:" + port + "/api/tasks", HttpMethod.GET, entity, List.class);
+		List tasks = resposeList.getBody();
+
 		assertEquals(tasks.size(), randNumber);
 	}
 
 	@Test
-	void postingAndRetrievingObjectThroughEndpoint() throws Exception {
+	void postingAndRetrievingTaskThroughEndpoint() throws Exception {
 		Integer randomLangIndex = (int) new Random().nextFloat() * TaskService.validLangs.size();
-		Task task = new Task();
-		task.setName(UUID.randomUUID().toString());
-		task.setLang(TaskService.validLangs.get(randomLangIndex));
-		task.setCode(UUID.randomUUID().toString());
+		TaskRequest taskRequest = new TaskRequest();
+		taskRequest.setName(UUID.randomUUID().toString());
+		taskRequest.setLang(TaskService.validLangs.get(randomLangIndex));
+		taskRequest.setCode(UUID.randomUUID().toString());
 
 		// Post and compare
-		Task apiTask = this.restTemplate.postForObject(
-				"http://localhost:" + port + "/api/tasks", task, Task.class);
-		assertEquals(task.getName(), apiTask.getName());
-		assertEquals(task.getCode(), apiTask.getCode());
-		assertEquals(TaskState.CREATED, apiTask.getState());
-		assertThat(apiTask.getId() != null);
+		String token = tokenService.createTokenForUser("testuser");
+		String authHeader = String.format("Bearer %s", token);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		headers.add("Authorization", authHeader);
+		HttpEntity<TaskRequest> entity = new HttpEntity<>(taskRequest, headers);
+
+		TaskResponse taskResponse = this.restTemplate.postForObject(
+				"http://localhost:" + port + "/api/tasks", entity, TaskResponse.class);
+		assertEquals(taskRequest.getName(), taskResponse.getName());
+		assertEquals(taskRequest.getCode(), taskResponse.getCode());
+		assertEquals(TaskState.CREATED, taskResponse.getState());
+		assertThat(taskResponse.getId() != null);
 	}
 
 	@Test

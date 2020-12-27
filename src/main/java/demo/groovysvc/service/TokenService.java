@@ -33,8 +33,6 @@ public class TokenService {
 				.orElseThrow(() -> new InvalidTokenCreationRequestException(
 					String.format("Invalid user: %s", username)));
 
-		log.info("User found:" + user);
-
 		Token token = new Token();
 		token.setToken(UUID.randomUUID().toString());
 		token.setUser(user);
@@ -57,8 +55,6 @@ public class TokenService {
 			.findOne(Example.of(exampleToken))
 			.orElseThrow(() -> new InvalidTaskRequestException("Invalid token"));
 
-		log.info("Token instance: " + tokenInstance);
-		// log.info("User in Token instance: " + tokenInstance.getUser());
 		return tokenInstance.getUser();
 	}
 }

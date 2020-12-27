@@ -21,10 +21,10 @@ public class LoadDatabase {
 	@Bean
 	CommandLineRunner initDatabase(UserRepository userRepository) {
 		return args -> {
-			List<String> demoUsers = Arrays.asList("denis", "webuser", "demo");
+			List<String> demoUsers = Arrays.asList("denis", "webuser", "demo", "testuser");
 			for (String username: demoUsers) {
 				User user = new User(null, username, new HashSet<>());
-				user = userRepository.save(user);
+				user = userRepository.saveAndFlush(user);
 				log.info("Preloading " + userRepository.save(user));
 			}
 

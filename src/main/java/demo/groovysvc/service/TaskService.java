@@ -66,11 +66,11 @@ public class TaskService {
 	public Task createAndRunTask(User user, Task task) {
 		task.setCreatedDate(new Date());
 		task.setState(TaskState.CREATED);
-		taskRepository.save(task);
+		taskRepository.saveAndFlush(task);
 
 		Set<Task> userTasks = user.getTasks();
 		userTasks.add(task);
-		userRepository.save(user);
+		userRepository.saveAndFlush(user);
 
 		return runTask(task.getId());
 	}
