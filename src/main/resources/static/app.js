@@ -80,7 +80,7 @@ function taskDetail(taskId) {
   var html = '<table class="table table-bordered table-striped table-condensed table-hover"><tbody>';
 
   Object.keys(task).map(k => {
-    var v = escapeString( task[k] );
+    var v = escapeString(task[k]);
     html += '<tr><th scope="row">' + k + '</th><td>';
     html += (k === "code" || k === "stdout" || k === "stderr") ? ('<pre>' + v + '</pre>') : v;
     html += '</td></tr>';
@@ -140,12 +140,12 @@ function login() {
   postData('/api/tokens', loginData).then(response => {
     console.log(JSON.stringify(response));
     if (response.error) {
-        formAlert(response.cause);
+      formAlert(response.cause);
     } else {
-	    token = response.token;
-	    hide('login-form');
-	    show('main-ui');
-	    init();
+      token = response.token;
+      hide('login-form');
+      show('main-ui');
+      init();
     }
   });
 }
