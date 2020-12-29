@@ -1,6 +1,9 @@
 // The list of tasks is a global array
 var tasks = [];
 
+// The access token
+var token = undefined;
+
 // show an element by its ID
 function show(id) {
   document.getElementById(id).style.display = "";
@@ -35,8 +38,10 @@ function showCreateForm() {
 
 // fetch the tasks data from the backend and update the contents of the task list
 function getTasks() {
-  fetch('/api/tasks')
-    .then(response => response.json())
+  fetch('/api/tasks', {
+    method: 'GET',
+    headers: { 'Authorization': 'Bearer ' + token }
+  }).then(response => response.json())
     .then(data => {
       tasks = data;
       var html = data.map(task => renderTask(task)).join("");
@@ -89,7 +94,10 @@ function taskDetail(taskId) {
 async function postData(url = '', data = {}) {
   const response = await fetch(url, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
     body: JSON.stringify(data)
   });
   return response.json();
@@ -123,4 +131,23 @@ function init() {
   setInterval(getTasks, 3000);
 }
 
-init();
+// login form handler
+function login() {
+  const loginData = {
+    username: valueOf('username'),
+    password: valueOf('userpassword')
+  };
+  postData('/api/tokens', loginData).then(response => {
+    console.log(JSON.stringify(response));
+    if (response.error) {
+        formAlert(response.cause);
+    } else {
+	    token = response.token;
+	    hide('login-form');
+	    show('main-ui');
+	    init();
+    }
+  });
+}
+
+hide('main-ui');
