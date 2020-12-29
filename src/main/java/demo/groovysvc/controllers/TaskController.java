@@ -1,6 +1,6 @@
 package demo.groovysvc.controllers;
 
-import java.util.Collection;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -33,7 +33,7 @@ public class TaskController {
     private final ModelMapper modelMapper;
 
     @GetMapping("/api/tasks")
-	Collection<TaskResponse> allUserTasks(@RequestHeader("Authorization") String requestHeader) {
+	List<TaskResponse> allUserTasks(@RequestHeader("Authorization") String requestHeader) {
 		User user = tokenService.getUserByToken(requestHeader);
 		log.debug(String.format("All tasks for User %s", user));
 		return user.getTasks().stream()
