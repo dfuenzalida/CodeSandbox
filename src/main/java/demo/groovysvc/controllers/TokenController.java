@@ -20,7 +20,7 @@ public class TokenController {
 
 	@PostMapping("/api/tokens")
 	TokenResponse createToken(@RequestBody TokenRequest tokenRequest) throws Exception {
-		log.info("Token request: " + tokenRequest);
+		log.info(String.format("Token request for user: %s", tokenRequest.getUsername()));
 		String token = tokenService.createTokenForUser(tokenRequest.getUsername());
 		return new TokenResponse(token);
 	}
