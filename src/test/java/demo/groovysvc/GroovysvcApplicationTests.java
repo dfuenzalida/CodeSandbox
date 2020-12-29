@@ -2,6 +2,7 @@ package demo.groovysvc;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,6 +31,7 @@ import demo.groovysvc.dto.TaskResponse;
 import demo.groovysvc.entity.Task;
 import demo.groovysvc.entity.TaskState;
 import demo.groovysvc.entity.User;
+import demo.groovysvc.exceptions.ApiRequestError;
 import demo.groovysvc.repository.TaskRepository;
 import demo.groovysvc.repository.UserRepository;
 import demo.groovysvc.service.TaskService;
@@ -77,8 +79,8 @@ class GroovysvcApplicationTests {
 
 	@Test
 	void defaultMappingShouldReturnIndexHtml() throws Exception {
-		assertThat(this.restTemplate.getForObject("http://localhost:" + port + "/", String.class))
-			.contains("<title>Groovy Service</title>");
+		String defaultPage = this.restTemplate.getForObject("http://localhost:" + port + "/", String.class);
+		assertThat(defaultPage).contains("<title>Groovy Service</title>");
 	}
 
 	@Test
@@ -103,8 +105,8 @@ class GroovysvcApplicationTests {
 		headers.add("Authorization", authHeader);
 
 		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(Map.of(), headers);
-		ResponseEntity<TaskResponse> resposeTask = restTemplate.exchange(
-				"http://localhost:" + port + "/api/tasks/" + createdTask.getId(), HttpMethod.GET, entity, TaskResponse.class);
+		String url = String.format("http://localhost:%s/api/tasks/%s", port, createdTask.getId());
+		ResponseEntity<TaskResponse> resposeTask = restTemplate.exchange(url, HttpMethod.GET, entity, TaskResponse.class);
 		TaskResponse apiTask = resposeTask.getBody();
 		TaskRequest actual = modelMapper.map(apiTask, TaskRequest.class);
 		assertEquals(expected, actual);
@@ -136,11 +138,11 @@ class GroovysvcApplicationTests {
 		headers.add("Authorization", authHeader);
 
 		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(Map.of(), headers);
-		ResponseEntity<List> resposeList = restTemplate.exchange(
-				"http://localhost:" + port + "/api/tasks", HttpMethod.GET, entity, List.class);
+		String url = String.format("http://localhost:%s/api/tasks", port);
+		ResponseEntity<List> resposeList = restTemplate.exchange(url, HttpMethod.GET, entity, List.class);
 		List tasks = resposeList.getBody();
 
-		assertEquals(tasks.size(), randNumber);
+		assertThat(tasks.size()).isEqualTo(randNumber);
 	}
 
 	@Test
@@ -165,20 +167,19 @@ class GroovysvcApplicationTests {
 		assertEquals(taskRequest.getName(), taskResponse.getName());
 		assertEquals(taskRequest.getCode(), taskResponse.getCode());
 		assertEquals(TaskState.CREATED, taskResponse.getState());
-		assertThat(taskResponse.getId() != null);
+		assertTrue(taskResponse.getId() != null);
 	}
 
 	@Test
 	void postingInvalidLangThrows() throws Exception {
-		Task task = new Task();
-		task.setName(UUID.randomUUID().toString());
-		task.setLang(UUID.randomUUID().toString()); // invalid lang
-		task.setCode(UUID.randomUUID().toString());
+		TaskRequest taskRequest = new TaskRequest();
+		taskRequest.setName(UUID.randomUUID().toString());
+		taskRequest.setLang(UUID.randomUUID().toString()); // invalid lang
+		taskRequest.setCode(UUID.randomUUID().toString());
 
 		// Post and compare
-		String result = this.restTemplate.postForObject(
-				"http://localhost:" + port + "/api/tasks", task, String.class);
-		assertThat(result.contains("Invalid lang"));
+		ApiRequestError error = postTaskRequest(taskRequest);
+		assertTrue(error.getCause().contains("Invalid lang"));
 	}
 
 	@Test
@@ -188,45 +189,77 @@ class GroovysvcApplicationTests {
 		List<String> badTaskCodes = Arrays.asList(null, "", " ", "   \t \n \r");
 
 		for (String badCode: badTaskCodes) {
-			Task task = new Task();
-			task.setName(UUID.randomUUID().toString());
-			task.setLang(TaskService.validLangs.get(0));
-			task.setCode(badCode);
+			TaskRequest taskRequest = new TaskRequest();
+			taskRequest.setName(UUID.randomUUID().toString());
+			taskRequest.setLang(TaskService.validLangs.get(0));
+			taskRequest.setCode(badCode);
 
 			// Post and compare
-			String result = this.restTemplate.postForObject(
-					"http://localhost:" + port + "/api/tasks", task, String.class);
-			assertThat(result.contains("No code entered for this task request"));
+			ApiRequestError result = postTaskRequest(taskRequest);
+			assertTrue(result.getCause().contains("No code entered for this task request"));
 		}
 	}
 
 	@Test
 	void postingTaskWithTooMuchCodeThrows() throws Exception {
 		StringBuilder longCode = new StringBuilder();
-		while (longCode.length() < 100_000) {
+		while (longCode.length() <= 100_000) {
 			longCode.append("println('1'); // unused payload\n");
 		}
 
-		Task task = new Task();
-		task.setName(UUID.randomUUID().toString());
-		task.setLang(TaskService.validLangs.get(0));
-		task.setCode(longCode.toString());
+		TaskRequest taskRequest = new TaskRequest();
+		taskRequest.setName(UUID.randomUUID().toString());
+		taskRequest.setLang(TaskService.validLangs.get(0));
+		taskRequest.setCode(longCode.toString());
 
 		// Post and check for error
-		String result = this.restTemplate.postForObject(
-				"http://localhost:" + port + "/api/tasks", task, String.class);
-		assertThat(result.contains("Code contents are too big"));
+		ApiRequestError result = postTaskRequest(taskRequest);
+		assertTrue(result.getCause().contains("Code contents are too big"));
 	}
 
 	@Test
 	void retrievingInvalidTaskIdShouldThrow() throws Exception {
-		String result = this.restTemplate.getForObject("http://localhost:" + port + "/api/tasks/-1", String.class);
-		assertThat(result.contains("Could not find task"));
+		Long largeRandomNum = (long) (Math.abs(Math.random()) * Long.MAX_VALUE);
+		String error = getTaskByPath(String.format("/api/tasks/%s", largeRandomNum));
+		assertTrue(error.contains("Could not find task"));
 	}
 
 	@Test
 	void retrievingInvalidTaskNumberShouldThrow() throws Exception {
-		String result = this.restTemplate.getForObject("http://localhost:" + port + "/api/tasks/dummy", String.class);
-		assertThat(result.contains("NumberFormatException"));
+		String error = getTaskByPath("/api/tasks/dummy");
+		assertTrue(error.contains("Bad Request"));
 	}
+
+	private ApiRequestError postTaskRequest(TaskRequest taskRequest) {
+		String token = tokenService.createTokenForUser("testuser");
+		String authHeader = String.format("Bearer %s", token);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		headers.add("Authorization", authHeader);
+		HttpEntity<TaskRequest> entity = new HttpEntity<TaskRequest>(taskRequest, headers);
+
+		ApiRequestError result = this.restTemplate.postForObject(
+				"http://localhost:" + port + "/api/tasks", entity, ApiRequestError.class);
+
+		return result;
+	}
+
+
+	private String getTaskByPath(String path) {
+		String token = tokenService.createTokenForUser("testuser");
+		String authHeader = String.format("Bearer %s", token);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+		headers.setAccept(List.of(MediaType.APPLICATION_JSON));
+		headers.add("Authorization", authHeader);
+		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(Map.of(), headers);
+
+		String url = String.format("http://localhost:%s/%s", port, path);
+		// ApiRequestError
+		ResponseEntity<String> responseError = restTemplate.exchange(url, HttpMethod.GET, entity, String.class);
+		String error = responseError.getBody();
+		return error;
+	}
+
 }
