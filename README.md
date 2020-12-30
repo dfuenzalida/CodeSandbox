@@ -60,7 +60,7 @@ The criteria for this approach was that running arbitrary code submitted by user
 
 ### Service diagram
 
-```
+```text
           [Web UI]
               |
               v
@@ -142,17 +142,23 @@ println "OUT:$sout\n\nERR:$err"
 
 ## Example usage
 
+In the example below, we send a POST request to the `/api/tokens` endpoint and extract the token out of the response, saving it into the `APITOKEN` environment variable:
+
 ```
 export APITOKEN=`curl --no-progress-meter -X POST http://localhost:8080/api/tokens -H "Content-type: application/json" -d '{"username":"denis", "password":"SECRET!"}' | awk -F'"' '{ print $4 }'`
 
 echo $APITOKEN
+```
 
+In the calls to the other endpoints, we'll need to provide the token as part of the `Authorization` header, like in the following calls to create a new task and then retrieving all the tasks for the user associated with the token:
+
+```
 curl --no-progress-meter -X POST http://localhost:8080/api/tasks -H "Content-type: application/json" -H "Authorization: Bearer $APITOKEN" -d '{"name":"token task", "lang":"groovy", "code":"println(1)"}' | json_pp
 
 curl --no-progress-meter http://localhost:8080/api/tasks -H "Content-type: application/json" -H "Authorization: Bearer $APITOKEN" | json_pp
 ```
 
-## Example tasks
+### Example tasks
 
 The following programs can be used to test the service:
 
@@ -161,10 +167,10 @@ The following programs can be used to test the service:
 A Groovy program that prints the result of `(2*3*4)`:
 
 ```
-$ curl --no-progress-meter -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -d '{"name": "example", "lang": "groovy", "code": "println(2*3*4)"}' | json_pp
+$ curl --no-progress-meter -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -H "Authorization: Bearer $APITOKEN" -d '{"name": "example", "lang": "groovy", "code": "println(2*3*4)"}' | json_pp
 ```
 
-returns
+returns something like the following:
 
 ```javascript
 {
@@ -183,6 +189,10 @@ returns
 ```
 
 ---
+
+**Creating a task that won't execute completely due to timeout**
+
+Launch the service and open the Web UI at http://localhost:8080/ and log in with any of the users defined in `LoadDatabase.java`. Note that the user name is required but any password will do.
 
 You can submit the following Groovy program through the Web UI to validate the timeout feature:
 
@@ -215,32 +225,34 @@ When submitted, the program above should NOT execute fully. Only some of the fir
 
 ---
 
+**Creating more tasks than the size of the task pool**
+
 Create 20 tasks that take several seconds to complete (useful to test the size of the task pool). In the Bash script below, each task prints its index, waits 5 seconds, then prints "ok"
 
 
 ```
-for i in $(seq 1 20); do curl -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -d "{\"name\": \"task $i\",\"lang\":\"groovy\",\"code\": \"println($i)\nsleep(5000)\nprintln('ok')\"}" ; echo; done
+for i in $(seq 1 20); do curl -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -H "Authorization: Bearer $APITOKEN" -d "{\"name\": \"task $i\",\"lang\":\"groovy\",\"code\": \"println($i)\nsleep(5000)\nprintln('ok')\"}" ; echo; done
 ```
 
 ---
 
-A simple program that throws an Exception:
+**A simple program that throws an Exception**
 
 ```
-$ curl --no-progress-meter -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -d '{"name": "example", "lang": "groovy", "code": "println(1/0)"}'
+$ curl --no-progress-meter -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -H "Authorization: Bearer $APITOKEN" -d '{"name": "example", "lang": "groovy", "code": "println(1/0)"}'
 ```
 
 
 ---
 
-Error example
+**Error example**
 
 ```
-curl -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -d '{"name": "invalid task", "lang": "bad-image-name"}'
+curl -X POST localhost:8080/api/tasks -H 'Content-type:application/json' -H "Authorization: Bearer $APITOKEN" -d '{"name": "invalid task", "lang": "bad-image-name"}'
 ```
 ---
 
-A task that submits another task by POSTing to the same service.
+**A task that submits another task by POSTing to the same service**
 
 This is interesting because in theory it opens the doors to craft a *self-replicating task*:
 
@@ -265,7 +277,7 @@ Crafting a code payload that in turn is able to create another similar, self-rep
 
 ---
 
-Perl example
+**Perl example**
 
 An interesting thing about the `groovy` container is that it also has Perl installed. By default, the `perl` interpreter is also whitelisted in `application.properties` so you can submit Perl programs too.
 
