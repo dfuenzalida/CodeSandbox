@@ -28,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import demo.groovysvc.controllers.TaskController;
 import demo.groovysvc.dto.TaskRequest;
 import demo.groovysvc.dto.TaskResponse;
+import demo.groovysvc.dto.UserTasksResponse;
 import demo.groovysvc.entity.Task;
 import demo.groovysvc.entity.TaskState;
 import demo.groovysvc.entity.User;
@@ -113,7 +114,6 @@ class GroovysvcApplicationTests {
 	}
 
 	@Test
-	@SuppressWarnings("rawtypes")
 	void retrievingAllTasksThroughEndpoint() throws Exception {
 		User exampleUser = new User();
 		exampleUser.setUsername("testuser");
@@ -139,10 +139,10 @@ class GroovysvcApplicationTests {
 
 		HttpEntity<Map<String, Object>> entity = new HttpEntity<>(Map.of(), headers);
 		String url = String.format("http://localhost:%s/api/tasks", port);
-		ResponseEntity<List> resposeList = restTemplate.exchange(url, HttpMethod.GET, entity, List.class);
-		List tasks = resposeList.getBody();
+		ResponseEntity<UserTasksResponse> resposeList = restTemplate.exchange(url, HttpMethod.GET, entity, UserTasksResponse.class);
+		UserTasksResponse userTasksResponse = resposeList.getBody();
 
-		assertThat(tasks.size()).isEqualTo(randNumber);
+		assertThat(userTasksResponse.getTasks().size()).isEqualTo(randNumber);
 	}
 
 	@Test

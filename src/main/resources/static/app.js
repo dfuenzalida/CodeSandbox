@@ -1,6 +1,9 @@
 // The list of tasks is a global array
 var tasks = [];
 
+// The ID of the interval function used to retrieve the user's tasks
+var tasksInterval = undefined;
+
 // The access token
 var token = undefined;
 
@@ -43,8 +46,8 @@ function getTasks() {
     headers: { 'Authorization': 'Bearer ' + token }
   }).then(response => response.json())
     .then(data => {
-      tasks = data;
-      var html = data.map(task => renderTask(task)).join("");
+      tasks = data.tasks;
+      var html = tasks.map(task => renderTask(task)).join("");
       updateById('taskListContainer', html);
     });
 }
@@ -128,7 +131,7 @@ function submitForm() {
 function init() {
   showCreateForm();
   getTasks();
-  setInterval(getTasks, 3000);
+  tasksInterval = setInterval(getTasks, 3000);
 }
 
 // login form handler

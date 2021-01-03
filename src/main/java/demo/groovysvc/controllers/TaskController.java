@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import demo.groovysvc.dto.TaskRequest;
 import demo.groovysvc.dto.TaskResponse;
+import demo.groovysvc.dto.UserTasksResponse;
 import demo.groovysvc.entity.Task;
 import demo.groovysvc.entity.User;
 import demo.groovysvc.exceptions.InvalidTaskRequestException;
@@ -33,12 +34,13 @@ public class TaskController {
     private final ModelMapper modelMapper;
 
     @GetMapping("/api/tasks")
-	List<TaskResponse> allUserTasks(@RequestHeader("Authorization") String requestHeader) {
+	UserTasksResponse allUserTasks(@RequestHeader("Authorization") String requestHeader) {
 		User user = tokenService.getUserByToken(requestHeader);
 		log.debug(String.format("All tasks for User %s", user));
-		return user.getTasks().stream()
-				.map(this::asTaskResponse)
-				.collect(Collectors.toList());
+		List<TaskResponse> userTasks =  user.getTasks().stream().map(this::toTaskResponse).collect(Collectors.toList());
+		UserTasksResponse userTasksResponse = new UserTasksResponse();
+		userTasksResponse.setTasks(userTasks);
+		return userTasksResponse;
 	}
 
 	@PostMapping("/api/tasks")
@@ -54,7 +56,7 @@ public class TaskController {
 		// Ready to create and run
 		Task task = modelMapper.map(taskRequest, Task.class);
 		taskService.createAndRunTask(user, task);
-		return asTaskResponse(task);
+		return toTaskResponse(task);
 	}
 
 	@GetMapping("/api/tasks/{id}")
@@ -65,7 +67,7 @@ public class TaskController {
 				.findFirst()
 				.orElseThrow(() -> new TaskNotFoundException(id));
 
-		return asTaskResponse(result);
+		return toTaskResponse(result);
 	}
 
 	private void validateTask(TaskRequest taskRequest) {
@@ -86,7 +88,7 @@ public class TaskController {
 		}
 	}
 
-	private TaskResponse asTaskResponse(Task task) {
+	private TaskResponse toTaskResponse(Task task) {
 		return modelMapper.map(task, TaskResponse.class);
 	}
 }
