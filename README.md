@@ -50,7 +50,7 @@ Note that in the output above, the Java version reported is `1.8.0_275`. This is
 
 You can create the JAR file with `./mvnw clean package`, which will clean, build, run the tests and package the application as a single Java JAR file that contains everything needed to run the application (provided that you have the JDK 11 installed).
 
-This JAR file can be run directly with `java -jar target/groovysvc-0.0.1-SNAPSHOT.jar`
+This JAR file can be run directly with `java -jar target/codesandbox-0.0.1-SNAPSHOT.jar`
 
 ## Service Design and architecture
 

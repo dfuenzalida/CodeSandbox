@@ -81,7 +81,7 @@ class CodeSandboxApplicationTests {
 	@Test
 	void defaultMappingShouldReturnIndexHtml() throws Exception {
 		String defaultPage = this.restTemplate.getForObject("http://localhost:" + port + "/", String.class);
-		assertThat(defaultPage).contains("<title>Groovy Service</title>");
+		assertThat(defaultPage).contains("<title>Code Sandbox</title>");
 	}
 
 	@Test

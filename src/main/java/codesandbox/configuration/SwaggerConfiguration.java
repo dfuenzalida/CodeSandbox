@@ -17,7 +17,7 @@ public class SwaggerConfiguration {
 	@Bean
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
-                .info(new Info().title("GroovyService").version("1.0.0"))
+                .info(new Info().title("CodeSandbox").version("1.0.0"))
                 // Components section defines Security Scheme "Bearer Auth"
                 .components(new Components()
                         .addSecuritySchemes("Bearer Auth", new SecurityScheme()

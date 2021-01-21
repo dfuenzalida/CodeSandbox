@@ -49,9 +49,9 @@ public class TaskService {
 	private UserRepository userRepository;
 
 	public TaskService(
-			@Value("${groovyService.threadPoolSize}") Integer threadPoolSizeProp,
-			@Value("${groovyService.validLangs}") String validLangsProp,
-			@Value("${groovyService.timeoutSecs}") String timeoutSecsProp) {
+			@Value("${codeSandbox.threadPoolSize}") Integer threadPoolSizeProp,
+			@Value("${codeSandbox.validLangs}") String validLangsProp,
+			@Value("${codeSandbox.timeoutSecs}") String timeoutSecsProp) {
 
 		log.info(String.format("Created fixed pool of %s executors for tasks", threadPoolSizeProp));
 		executorService = Executors.newFixedThreadPool(threadPoolSizeProp);
@@ -109,7 +109,7 @@ public class TaskService {
 					task.setState(TaskState.RUNNING);
 					taskRepository.save(task);
 
-					// Create one directory per task and mount /tmp/groovyService/<taskId> as /groovyService
+					// Create one directory per task and mount /tmp/codeSandbox/<taskId> as /codeSandbox
 					// so that one script can't read other script files by opening ("../something/1234.tmp")
 					String volume = String.format("%s:/groovyScripts:ro", directoryForTask(task));
 
@@ -157,7 +157,7 @@ public class TaskService {
 	}
 
 	String directoryForTask(Task task) {
-		return String.format("/tmp/groovyService/%s", task.getId());
+		return String.format("/tmp/codeSandbox/%s", task.getId());
 	}
 
 	void writeScriptForTask(Task task) {
