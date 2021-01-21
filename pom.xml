@@ -9,11 +9,11 @@
 		<version>2.4.1</version>
 		<relativePath /> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>demo</groupId>
-	<artifactId>groovysvc</artifactId>
+	<groupId>codesandbox</groupId>
+	<artifactId>codesandbox</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>groovysvc</name>
-	<description>Demo project for Spring Boot</description>
+	<name>codesandbox</name>
+	<description>RESTful service for running code tasks written in Groovy inside a Docker container</description>
 
 	<properties>
 		<java.version>11</java.version>

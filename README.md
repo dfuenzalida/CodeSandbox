@@ -43,7 +43,7 @@ Note that in the output above, the Java version reported is `1.8.0_275`. This is
 
 ## Running locally
 
-* You can run the `GroovysvcApplication` class from your IDE or run from the command line with: `./mvnw spring-boot:run`
+* You can run the `CodeSandboxApplication` class from your IDE or run from the command line with: `./mvnw spring-boot:run`
 * Once the service is up and running, it will be listening for requests on port 8080 by default. You can submit task requests using tools like Postman or cURL (see examples below), or use the browser-based UI by opening the following URL: http://localhost:8080/
 
 ## Packaging
