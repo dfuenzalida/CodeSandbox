@@ -1,8 +1,8 @@
-# GroovyService
+# CodeSandbox
 
 ## Description
 
-GroovyService is a RESTful wrapper around a Docker container that runs the Groovy interpreter with code submitted by users.
+CodeSandbox is a RESTful wrapper around a Docker container that runs the Groovy interpreter with code submitted by users.
 
 Running the code in a container allows simpler management of system resources and handling security: the code submitted by the user(s) runs in a sandbox, minimizing the risk of compromising the host service and allowing simpler definition of limits to the execution of those tasks.
 
@@ -39,7 +39,7 @@ $ docker run -it --rm groovy groovy --version
 Groovy Version: 3.0.7 JVM: 1.8.0_275 Vendor: AdoptOpenJDK OS: Linux
 ```
 
-Note that in the output above, the Java version reported is `1.8.0_275`. This is fine because it's the *Java runtime installed in the container*. The service (GroovyService) will run on a different JDK.
+Note that in the output above, the Java version reported is `1.8.0_275`. This is fine because it's the *Java runtime installed in the container*. The service (CodeSandbox) will run on a different JDK.
 
 ## Running locally
 
@@ -112,9 +112,9 @@ The following is the list of the APIs implemented in this version of the service
 
 The following parameters in the `application.properties` file can be used to change the behaviour of the service:
 
-* `groovyService.validLangs` - contains a comma-separated list of valid scripts that can be executed in the container. By default it contains `groovy,perl,echo`
-* `groovyService.threadPoolSize` - defines the size of the thread pool that can work on tasks (eg. how many containers can run simultaneously). By default it's set to `3`.
-* `groovyService.timeoutSecs` - the maximum time (in seconds) that a task can be running before being killed. By default it's set to `10` seconds. Internally it uses the `timeout` command from GNU coreutils, so it also accepts one of the following suffixes: 's' for seconds (the default), 'm' for minutes, 'h' for hours or 'd' for days. NOTE: A duration of `0` disables the timeout.
+* `CodeSandbox.validLangs` - contains a comma-separated list of valid scripts that can be executed in the container. By default it contains `groovy,perl,echo`
+* `CodeSandbox.threadPoolSize` - defines the size of the thread pool that can work on tasks (eg. how many containers can run simultaneously). By default it's set to `3`.
+* `CodeSandbox.timeoutSecs` - the maximum time (in seconds) that a task can be running before being killed. By default it's set to `10` seconds. Internally it uses the `timeout` command from GNU coreutils, so it also accepts one of the following suffixes: 's' for seconds (the default), 'm' for minutes, 'h' for hours or 'd' for days. NOTE: A duration of `0` disables the timeout.
 
 ### Limitations, concerns and possible enhancements
 
@@ -122,7 +122,7 @@ The following parameters in the `application.properties` file can be used to cha
     * Authentication and authorization - only valid users of an organization should be allowed to see *their own* tasks and submit tasks. For RESTful services is very common to provide an endpoint where authorized users or apps submit a POST request to create a *token* that is sent with the HTTP headers and used by the service to validate the request.
     * An usage rate/quota system: for a given principal or account there should be a limit on the number of tasks they can submit per unit of time (eg. "5 tasks per minute") and/or runtime (eg. "100 seconds of runtime per minute, per client, across all their tasks")
 
-* **Breaking out the container**: GroovyService was written with the assumption that containers are generally safe but it could be possible to [run scripts that run shell commands](https://stackoverflow.com/a/159270/483566) and extract precise version information of the environment and then attempt to recreate [known exploits for Docker](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=docker), like the following:
+* **Breaking out the container**: CodeSandbox was written with the assumption that containers are generally safe but it could be possible to [run scripts that run shell commands](https://stackoverflow.com/a/159270/483566) and extract precise version information of the environment and then attempt to recreate [known exploits for Docker](https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=docker), like the following:
 
 ```groovy
 def sout = new StringBuilder(), serr = new StringBuilder()
@@ -138,7 +138,7 @@ println "OUT:$sout\n\nERR:$err"
     * Running multiple instances of the service would require some changes: each instance would have to share some shared storage for the task information. An option could be to change the storage to another database supported by JPA (eg. MySQL or Postgres) and add support for it by adding the required JDBC driver in the `pom.xml` file and configuring the JDBC properties in the `application.properties` file. Using other persistance options such as Redis is also possible but would require code changes.
 
 * **Scaling the service**:
-    * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize GroovyService and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
+    * The service launches containers but would need some work to be *containerized* itself. There are some options to implement something like "docker-in-docker" like the `docker.sock` approach on this post: https://devopscube.com/run-docker-in-docker/. With some extra effort, you could containerize CodeSandbox and be able to use tools like Docker compose or Kubernetes to launch as many instances as needed.
 
 ## Example usage
 
